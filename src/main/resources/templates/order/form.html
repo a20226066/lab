@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/menu :: head('Nuevo pedido')}"></head>
+<body>
+<nav th:replace="~{fragments/menu :: menu('pedidos')}"></nav>
+
+<main class="container">
+    <h2>Registrar pedido</h2>
+
+    <!-- th:object enlaza el formulario con el DTO "orderForm" (@ModelAttribute) -->
+    <form method="post" th:action="@{/order/save}" th:object="${orderForm}" novalidate>
+
+        <!--
+            Boton "por defecto": si el usuario presiona Enter dentro de un campo, el navegador
+            usa el PRIMER boton submit del formulario. Este boton (fuera de pantalla) hace que
+            Enter registre el pedido en lugar de activar un boton "Quitar".
+        -->
+        <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">Registrar</button>
+
+        <!-- Mensajes GLOBALES: reglas que dependen de varios campos (bindingResult.reject) -->
+        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
+            <div th:each="err : ${#fields.globalErrors()}" th:text="${err}"></div>
+        </div>
+        <div th:if="${info != null}" class="alert alert-info" th:text="${info}"></div>
+
+        <div class="row g-3 mb-3">
+            <!-- Tipo de comprobante -->
+            <div class="col-md-3">
+                <label for="type" class="form-label">Tipo de comprobante</label>
+                <select class="form-select" th:field="*{type}"
+                        th:classappend="${#fields.hasErrors('type')} ? 'is-invalid'">
+                    <option value="">-- Seleccione --</option>
+                    <option value="Factura">Factura</option>
+                    <option value="Boleta">Boleta</option>
+                </select>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></div>
+                <div class="form-text">Factura: cliente con RUC. Boleta: cliente con DNI.</div>
+            </div>
+
+            <!-- Fecha: type="date" envia yyyy-MM-dd y Spring lo convierte a LocalDate -->
+            <div class="col-md-3">
+                <label for="date" class="form-label">Fecha</label>
+                <input type="date" class="form-control" th:field="*{date}" th:max="${today}"
+                       th:classappend="${#fields.hasErrors('date')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('date')}" th:errors="*{date}"></div>
+            </div>
+
+            <!-- Cliente: th:field marca como "selected" el cliente elegido al volver con errores -->
+            <div class="col-md-6">
+                <label for="customerId" class="form-label">Cliente</label>
+                <select class="form-select" th:field="*{customerId}"
+                        th:classappend="${#fields.hasErrors('customerId')} ? 'is-invalid'">
+                    <option value="">-- Seleccione un cliente --</option>
+                    <option th:each="c : ${customerList}" th:value="${c.id}"
+                            th:text="|${c.name} (${c.documentType} ${c.document})|"></option>
+                </select>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('customerId')}"
+                     th:errors="*{customerId}"></div>
+            </div>
+        </div>
+
+        <h5>Productos</h5>
+        <!-- Error de la lista completa (p. ej. "Debe incluir al menos un producto") -->
+        <div class="alert alert-warning py-2" th:if="${#fields.hasErrors('lines')}" th:errors="*{lines}"></div>
+
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+            <tr>
+                <th style="width: 40%">Producto</th>
+                <th style="width: 15%">Cantidad</th>
+                <th class="text-end">Precio (S/)</th>
+                <th class="text-end">Subtotal (S/)</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <!--
+                Cada fila se enlaza a lines[i] con la sintaxis de preprocesamiento __${...}__
+                -> genera name="lines[0].productId", name="lines[0].quantity", etc.
+            -->
+            <tr th:each="line, st : *{lines}">
+                <td>
+                    <select class="form-select" th:field="*{lines[__${st.index}__].productId}"
+                            th:classappend="${#fields.hasErrors('lines[__${st.index}__].productId')} ? 'is-invalid'">
+                        <option value="">-- Seleccione --</option>
+                        <option th:each="p : ${productList}" th:value="${p.id}"
+                                th:text="|${p.name} - S/ ${#numbers.formatDecimal(p.price, 1, 2, 'POINT')} (stock: ${p.stock})|"></option>
+                    </select>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lines[__${st.index}__].productId')}"
+                         th:errors="*{lines[__${st.index}__].productId}"></div>
+                </td>
+                <td>
+                    <input type="text" inputmode="numeric" class="form-control"
+                           th:field="*{lines[__${st.index}__].quantity}"
+                           th:classappend="${#fields.hasErrors('lines[__${st.index}__].quantity')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lines[__${st.index}__].quantity')}"
+                         th:errors="*{lines[__${st.index}__].quantity}"></div>
+                </td>
+                <!-- Precio y subtotal: solo lectura, calculados en Java por el controlador -->
+                <td class="text-end"
+                    th:text="${line.price != null} ? ${#numbers.formatDecimal(line.price, 1, 2, 'POINT')} : '-'"></td>
+                <td class="text-end"
+                    th:text="${line.subtotal != null} ? ${#numbers.formatDecimal(line.subtotal, 1, 2, 'POINT')} : '-'"></td>
+                <td class="text-center">
+                    <!-- Submit que envia el indice de la fila a quitar -->
+                    <button type="submit" name="removeLine" th:value="${st.index}"
+                            class="btn btn-sm btn-outline-danger">Quitar</button>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(orderForm.lines)}">
+                <td colspan="5" class="text-center text-muted">No hay productos. Use "Agregar producto".</td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr>
+                <th colspan="3" class="text-end">TOTAL (S/)</th>
+                <th class="text-end"
+                    th:text="${orderForm.total != null} ? ${#numbers.formatDecimal(orderForm.total, 1, 2, 'POINT')} : '0.00'"></th>
+                <th></th>
+            </tr>
+            </tfoot>
+        </table>
+
+        <div class="d-flex gap-2">
+            <button type="submit" name="addLine" value="1" class="btn btn-outline-primary">Agregar producto</button>
+            <button type="submit" name="calculate" value="1" class="btn btn-outline-secondary">Calcular total</button>
+            <button type="submit" class="btn btn-success">Registrar pedido</button>
+            <a class="btn btn-secondary" th:href="@{/order/list}">Cancelar</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

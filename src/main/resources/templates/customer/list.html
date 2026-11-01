@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/menu :: head('Clientes')}"></head>
+<body>
+<nav th:replace="~{fragments/menu :: menu('clientes')}"></nav>
+
+<main class="container">
+    <h2>Clientes</h2>
+
+    <!-- Mensajes flash enviados con RedirectAttributes -->
+    <div th:replace="~{fragments/menu :: alertas}"></div>
+
+    <a class="btn btn-primary mb-3" th:href="@{/customer/new}">Nuevo cliente</a>
+
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>Tipo de documento</th>
+            <th>Número de documento</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- th:each con variable de estado "stat" para numerar las filas -->
+        <tr th:each="c, stat : ${customerList}">
+            <td th:text="${stat.count}"></td>
+            <td th:text="${c.name}"></td>
+            <td th:text="${c.documentType}"></td>
+            <td th:text="${c.document}"></td>
+            <td>
+                <a class="btn btn-sm btn-warning" th:href="@{/customer/edit(id=${c.id})}">Editar</a>
+                <a class="btn btn-sm btn-danger" th:href="@{/customer/delete(id=${c.id})}">Borrar</a>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(customerList)}">
+            <td colspan="5" class="text-center">No hay clientes registrados</td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/menu :: head('Cliente')}"></head>
+<body>
+<nav th:replace="~{fragments/menu :: menu('clientes')}"></nav>
+
+<main class="container" style="max-width: 640px">
+    <!-- UNA sola vista para crear y editar: si el id es null es nuevo, si no, es edicion -->
+    <h2 th:text="${customer.id == null} ? 'Nuevo cliente' : 'Editar cliente'"></h2>
+
+    <!-- th:object enlaza el formulario con el @ModelAttribute "customer" -->
+    <form method="post" th:action="@{/customer/save}" th:object="${customer}" novalidate>
+
+        <!-- El id viaja oculto: si tiene valor, save() actualiza en vez de insertar -->
+        <input type="hidden" th:field="*{id}">
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Nombre</label>
+            <!-- th:field genera name, id y value (conserva lo escrito si hay errores) -->
+            <input type="text" class="form-control" th:field="*{name}"
+                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+            <!-- Errores asociados al campo -->
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="documentType" class="form-label">Tipo de documento</label>
+            <select class="form-select" th:field="*{documentType}"
+                    th:classappend="${#fields.hasErrors('documentType')} ? 'is-invalid'">
+                <option value="">-- Seleccione --</option>
+                <option value="DNI">DNI</option>
+                <option value="RUC">RUC</option>
+            </select>
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('documentType')}"
+                 th:errors="*{documentType}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="document" class="form-label">Número de documento</label>
+            <input type="text" class="form-control" th:field="*{document}" maxlength="11"
+                   placeholder="DNI: 8 dígitos / RUC: 11 dígitos"
+                   th:classappend="${#fields.hasErrors('document')} ? 'is-invalid'">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('document')}" th:errors="*{document}"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a class="btn btn-secondary" th:href="@{/customer/list}">Cancelar</a>
+    </form>
+</main>
+</body>
+</html>

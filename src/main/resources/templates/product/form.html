@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/menu :: head('Producto')}"></head>
+<body>
+<nav th:replace="~{fragments/menu :: menu('catalogo')}"></nav>
+
+<main class="container" style="max-width: 640px">
+    <!-- Un solo formulario para crear y editar -->
+    <h2 th:text="${product.id == null} ? 'Nuevo producto' : 'Editar producto'"></h2>
+
+    <form method="post" th:action="@{/product/save}" th:object="${product}" novalidate>
+        <input type="hidden" th:field="*{id}">
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Nombre</label>
+            <input type="text" class="form-control" th:field="*{name}"
+                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
+
+        <!--
+            Se usa type="text" (no "number") a proposito: asi el navegador deja escribir letras
+            y es el servidor (BindingResult + messages.properties) quien detecta el error de conversion.
+            Si hubo error, th:field vuelve a mostrar lo que el usuario escribio (p. ej. "abc").
+        -->
+        <div class="mb-3">
+            <label for="price" class="form-label">Precio (S/)</label>
+            <input type="text" inputmode="decimal" class="form-control" th:field="*{price}"
+                   placeholder="Ej. 12.50"
+                   th:classappend="${#fields.hasErrors('price')} ? 'is-invalid'">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="stock" class="form-label">Stock disponible</label>
+            <input type="text" inputmode="numeric" class="form-control" th:field="*{stock}"
+                   placeholder="Ej. 100"
+                   th:classappend="${#fields.hasErrors('stock')} ? 'is-invalid'">
+            <div class="invalid-feedback" th:if="${#fields.hasErrors('stock')}" th:errors="*{stock}"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a class="btn btn-secondary" th:href="@{/product/list}">Cancelar</a>
+    </form>
+</main>
+</body>
+</html>
